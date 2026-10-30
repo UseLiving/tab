@@ -1,0 +1,496 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Tab ($TAB): your tab, finally itemized. Paste a wallet, get the receipt.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect x='6' y='3' width='20' height='26' rx='2' fill='%23f5f0e4'/%3E%3Cpath d='M10 9h12M10 13h8M10 17h12' stroke='%231d1a17' stroke-width='1.6' stroke-linecap='round'/%3E%3Crect x='10' y='21' width='12' height='3' rx='1' fill='%23ff4f9a'/%3E%3C/svg%3E">
+<title>Tab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* layout: a neon bar at closing time — plum-black room, hot pink signage, a thermal printer on the right spitting cream paper; poster type on the left, everything else in mono */
+:root{
+  color-scheme:dark;
+  --bg:#0c0910; --bg2:#120e18; --panel:#16111d; --panel2:#1c1625; --line:#2b2236; --line2:#3d3049;
+  --ink:#fbf7ff; --mut:#ab9fbb; --dim:#7a6e8a; --pink:#ff4f9a; --pink2:#ff86bb; --yel:#ffe14d; --loss:#ff5a5f; --gain:#5ef2a0;
+  --paper:#f5f0e4; --paper2:#ebe4d4; --pink-ink:#1d1a17;
+  --disp:"Anton",Impact,"Arial Narrow",sans-serif; --mono:"Space Mono",ui-monospace,Menlo,monospace; --sans:"Manrope",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(50% 40% at 15% 10%,rgba(255,79,154,.14),transparent 70%),radial-gradient(40% 40% at 90% 30%,rgba(255,225,77,.06),transparent 70%),radial-gradient(60% 50% at 50% 110%,rgba(255,79,154,.08),transparent 70%)}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+::selection{background:var(--pink);color:#fff}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px;position:relative;z-index:1}
+.mono{font-family:var(--mono)}
+.loss{color:var(--loss)}.gain{color:var(--gain)}.pink{color:var(--pink)}.yel{color:var(--yel)}
+
+/* marquee */
+.mq{position:relative;z-index:2;display:flex;align-items:center;height:30px;border-bottom:1px solid var(--line);background:#09070c;font-family:var(--mono);font-size:11.5px;overflow:hidden}
+.mq b{flex:none;position:relative;z-index:2;background:var(--pink);color:#fff;font-size:10px;letter-spacing:.12em;padding:3px 9px;margin:0 10px;border-radius:4px;box-shadow:0 0 0 10px #09070c,14px 0 14px 10px #09070c}
+.mq-in{display:flex;gap:34px;width:max-content;animation:mq 50s linear infinite;color:var(--mut);white-space:nowrap}
+.mq:hover .mq-in{animation-play-state:paused}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* nav */
+.top{position:sticky;top:0;z-index:40;background:rgba(12,9,16,.82);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;height:64px}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;font-size:14px;letter-spacing:.12em}
+.logo svg{width:30px;height:30px;transition:transform .4s}
+.logo:hover svg{transform:rotate(-8deg) translateY(-2px)}
+.nav{margin-left:auto;display:flex;gap:22px;font-size:14px;color:var(--mut)}
+.nav a:hover,.nav a.on{color:var(--ink)}
+.tk{font-family:var(--mono);font-size:12px;border:1px solid var(--line2);border-radius:99px;padding:5px 12px;color:var(--pink2);transition:.2s}
+.tk:hover{border-color:var(--pink);background:rgba(255,79,154,.08)}
+.snd{font-family:var(--mono);font-size:12px;color:var(--dim)}
+.snd:hover{color:var(--ink)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:60px;padding:56px 0 40px;align-items:start}
+.kick{font-family:var(--mono);font-size:12px;letter-spacing:.2em;color:var(--pink);font-weight:700}
+h1{font-family:var(--disp);font-weight:400;font-size:clamp(60px,8.6vw,112px);line-height:.92;letter-spacing:.005em;margin:18px 0 22px;text-transform:uppercase}
+h1 .ln{display:block;overflow:hidden}
+h1 .ln span{display:inline-block;transform:translateY(105%);animation:up .8s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes up{to{transform:none}}
+h1 .acc{color:var(--pink);text-shadow:0 0 30px rgba(255,79,154,.55),0 0 2px rgba(255,79,154,.9);animation:up .8s cubic-bezier(.2,.8,.2,1) forwards,neon 5s 1.4s infinite}
+@keyframes neon{0%,100%{opacity:1}91%{opacity:1}92%{opacity:.55}93%{opacity:1}96%{opacity:.7}97%{opacity:1}}
+.lede{color:var(--mut);font-size:17px;max-width:470px}
+.lede i{font-style:normal;color:var(--ink)}
+.pform{display:flex;gap:8px;margin:26px 0 12px;max-width:500px;background:var(--panel);border:1px solid var(--line2);border-radius:14px;padding:6px;transition:border-color .2s,box-shadow .2s}
+.pform:focus-within{border-color:var(--pink);box-shadow:0 0 0 4px rgba(255,79,154,.12)}
+.pform input{flex:1;min-width:0;background:transparent;border:0;outline:0;font-family:var(--mono);font-size:14px;padding:0 10px}
+.pform input::placeholder{color:var(--dim)}
+.pbtn{height:44px;padding:0 20px;border-radius:10px;background:var(--pink);color:#fff;font-family:var(--mono);font-weight:700;font-size:13.5px;letter-spacing:.06em;transition:.15s;box-shadow:0 6px 24px rgba(255,79,154,.35)}
+.pbtn:hover{background:var(--pink2)}
+.pbtn:active{transform:translateY(1px)}
+.perr{color:var(--loss);font-size:13px;font-family:var(--mono);min-height:20px}
+.sample{font-size:14px;color:var(--mut)}
+.sample button{color:var(--ink);font-weight:600;border-bottom:1px solid var(--pink)}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 8px}
+.badges span{font-size:12.5px;font-weight:600;background:var(--panel2);border:1px solid var(--line);border-radius:99px;padding:5px 11px}
+.fine{font-size:12.5px;color:var(--dim)}
+.counters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:26px;max-width:500px}
+.cnt{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.cnt small{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;color:var(--mut)}
+.cnt b{display:block;font-family:var(--mono);font-size:26px;font-weight:400;margin-top:4px;font-variant-numeric:tabular-nums}
+.cnt.wide{grid-column:1/-1;display:flex;justify-content:space-between;align-items:end;cursor:pointer;transition:border-color .2s}
+.cnt.wide:hover{border-color:var(--pink)}
+.cnt .sub{font-size:12px;color:var(--mut);font-family:var(--mono)}
+
+/* printer */
+.printer{position:sticky;top:96px}
+.pr-top{position:relative;z-index:3;background:linear-gradient(180deg,#26202f,#18131f);border:1px solid var(--line2);border-radius:18px 18px 10px 10px;padding:12px 14px 16px;box-shadow:0 20px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06)}
+.pr-h{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11.5px}
+.led{display:flex;align-items:center;gap:7px;color:var(--mut)}
+.led i{width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.led.on{color:var(--pink2)}.led.on i{background:var(--pink);box-shadow:0 0 10px var(--pink);animation:blink .5s steps(1) infinite}
+@keyframes blink{50%{opacity:.25}}
+.pr-tag{border:1px solid var(--line2);border-radius:6px;padding:2px 8px;color:var(--yel)}
+.slot{height:10px;margin-top:12px;border-radius:6px;background:#050407;box-shadow:inset 0 2px 4px rgba(0,0,0,.9)}
+.feed{position:relative;z-index:2;margin:-6px 16px 0;height:0;overflow:hidden;transition:height .12s linear}
+.paper{background:var(--paper);color:var(--pink-ink);font-family:var(--mono);font-size:12.5px;line-height:1.55;padding:16px 18px 22px;position:relative;box-shadow:0 14px 40px rgba(0,0,0,.45);background-image:linear-gradient(90deg,rgba(0,0,0,.025) 1px,transparent 1px);background-size:3px 100%}
+.paper::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:10px;background:linear-gradient(-45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px,linear-gradient(45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px}
+.rc-band{background:var(--pink-ink);color:var(--paper);text-align:center;font-size:10px;letter-spacing:.2em;padding:3px 0;margin-bottom:12px}
+.rc-band.sim{background:var(--pink);color:#fff}
+.rc-logo{display:block;margin:0 auto 4px;width:34px;height:34px}
+.rc-t{text-align:center;font-weight:700;font-size:15px;letter-spacing:.12em}
+.rc-s{text-align:center;font-size:10px;letter-spacing:.06em;opacity:.65;margin-bottom:10px}
+.rc-hr{border-top:1px dashed rgba(29,26,23,.4);margin:9px 0}
+.rc-r{display:flex;justify-content:space-between;gap:10px}
+.rc-r span:first-child{text-transform:uppercase}
+.rc-r.m{opacity:.65}
+.rc-big{display:flex;justify-content:space-between;font-weight:700;font-size:16px;margin:4px 0}
+.rc-air{background:var(--pink-ink);color:var(--paper);display:flex;justify-content:space-between;padding:6px 9px;font-weight:700;margin:10px 0}
+.bars{height:46px;margin:12px 0 4px;display:flex;gap:1px;align-items:stretch}
+.bars i{background:var(--pink-ink);display:block}
+.rc-c{text-align:center;font-size:10.5px;opacity:.75}
+.rc-thx{text-align:center;font-weight:700;margin-top:10px;font-size:12px;letter-spacing:.04em}
+.pr-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:22px;justify-content:center}
+.pill{height:38px;padding:0 15px;border-radius:99px;border:1px solid var(--line2);background:var(--panel);font-family:var(--mono);font-size:12.5px;display:inline-flex;align-items:center;gap:7px;transition:.2s}
+.pill:hover{border-color:var(--pink);color:var(--pink2)}
+.pill.pk{background:var(--pink);border-color:var(--pink);color:#fff}
+.pill.pk:hover{background:var(--pink2);color:#fff}
+.tear{animation:tear .6s cubic-bezier(.5,0,.75,0) forwards}
+@keyframes tear{to{transform:translateY(60px) rotate(4deg);opacity:0}}
+
+/* sections */
+section.s{padding:90px 0 20px;border-top:1px solid var(--line);margin-top:70px}
+.sh{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,420px);gap:30px;align-items:end;margin-bottom:28px}
+h2{font-family:var(--disp);font-weight:400;font-size:clamp(44px,6vw,76px);line-height:.95;text-transform:uppercase}
+h2 .pink{text-shadow:0 0 24px rgba(255,79,154,.45)}
+.sh p{color:var(--mut)}
+[data-r]{opacity:0;transform:translateY(20px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1)}
+[data-r].in{opacity:1;transform:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{text-align:left;font-family:var(--mono);font-weight:400;font-size:11px;letter-spacing:.12em;color:var(--dim);padding:12px 16px;border-bottom:1px solid var(--line)}
+.tbl td{padding:12px 16px;border-bottom:1px solid rgba(43,34,54,.6);font-family:var(--mono);font-size:13.5px;font-variant-numeric:tabular-nums}
+.tbl .r{text-align:right}
+.tbl tr.click{cursor:pointer;transition:background .15s}
+.tbl tr.click:hover td{background:rgba(255,79,154,.05)}
+.tbl tr.me td{background:rgba(255,225,77,.07);color:var(--yel)}
+.rank{display:inline-grid;place-items:center;min-width:30px;height:24px;border-radius:7px;background:var(--panel2);font-size:12px;padding:0 6px}
+.rank.g1{background:var(--yel);color:#1a1606}.rank.g2{background:#d8d2e4;color:#16121b}.rank.g3{background:#d79a6b;color:#1a1008}
+.tier{font-size:10.5px;letter-spacing:.06em;border:1px solid currentColor;border-radius:5px;padding:2px 6px;white-space:nowrap}
+.t0{color:var(--gain)}.t1{color:#9fd4ff}.t2{color:var(--mut)}.t3{color:var(--yel)}.t4{color:var(--pink2)}.t5{color:var(--loss)}
+.hbar{display:flex;gap:8px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line);align-items:center}
+.chip{font-family:var(--mono);font-size:11.5px;padding:6px 11px;border-radius:99px;color:var(--mut);border:1px solid transparent}
+.chip.on{background:var(--pink);color:#fff}
+.chip:hover{color:var(--ink)}
+.srch{margin-left:auto;height:34px;border-radius:99px;border:1px solid var(--line2);background:var(--bg2);padding:0 14px;font-family:var(--mono);font-size:12.5px;outline:0;width:220px}
+.srch:focus{border-color:var(--pink)}
+.refund{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px}
+.till{padding:26px}
+.till small{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--mut)}
+.till .cd{font-family:var(--disp);font-size:84px;line-height:1;margin:8px 0;color:var(--yel);text-shadow:0 0 30px rgba(255,225,77,.35);font-variant-numeric:tabular-nums}
+.till .pot{font-family:var(--mono);font-size:15px}
+.ring{height:8px;border-radius:8px;background:var(--panel2);overflow:hidden;margin:16px 0}
+.ring i{display:block;height:100%;background:linear-gradient(90deg,var(--pink),var(--yel));transition:width 1s linear}
+.queue div{display:grid;grid-template-columns:28px 1fr auto;gap:10px;padding:10px 0;border-bottom:1px solid rgba(43,34,54,.6);font-family:var(--mono);font-size:13px;align-items:center}
+.queue div.next{color:var(--yel)}
+.queue div.paid{opacity:.45;text-decoration:line-through}
+.chk{padding:22px}
+.chk h3{font-family:var(--disp);font-weight:400;font-size:30px;text-transform:uppercase;margin-bottom:6px}
+.chk p{color:var(--mut);font-size:14px}
+.chk .res{margin-top:14px;font-family:var(--mono);font-size:13.5px;min-height:60px}
+.policy{margin-top:20px;padding:22px}
+.prow{display:grid;grid-template-columns:110px 1fr;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(43,34,54,.6)}
+.prow b{font-family:var(--disp);font-weight:400;font-size:40px;line-height:1}
+.prow .pb{height:6px;border-radius:6px;background:var(--panel2);margin-top:6px;overflow:hidden}
+.prow .pb i{display:block;height:100%;background:var(--pink);width:0;transition:width 1.4s cubic-bezier(.2,.8,.2,1)}
+.prow span{font-size:14px;color:var(--mut)}
+.prow strong{display:block;color:var(--ink);font-weight:700;font-size:15px}
+.fp{margin-top:20px;font-family:var(--mono);font-size:12.5px;color:var(--mut);columns:2;column-gap:30px}
+.fp li{margin-bottom:8px;break-inside:avoid;list-style:none;padding-left:16px;position:relative}
+.fp li::before{content:"*";position:absolute;left:0;color:var(--pink)}
+.steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.step{padding:22px}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--pink);font-weight:700}
+.step h3{font-family:var(--disp);font-weight:400;font-size:32px;text-transform:uppercase;margin:4px 0 8px}
+.step p{color:var(--mut);font-size:14px}
+.tiers{margin-top:20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tc{padding:18px;border-radius:16px;border:1px solid var(--line);background:var(--panel);position:relative;overflow:hidden;transition:transform .25s,border-color .25s}
+.tc:hover{transform:translateY(-4px);border-color:currentColor}
+.tc small{font-family:var(--mono);font-size:11px;opacity:.75}
+.tc b{display:block;font-family:var(--disp);font-weight:400;font-size:26px;text-transform:uppercase;line-height:1.05;margin:4px 0}
+.tc span{font-family:var(--mono);font-size:12.5px;color:var(--mut)}
+.notes{margin-top:20px;padding:22px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.notes h4{font-size:15px;font-weight:700;margin-bottom:4px}
+.notes p{color:var(--mut);font-size:14px}
+.cta{text-align:center;padding:100px 0 30px}
+.cta h2{margin-bottom:22px}
+footer{border-top:1px solid var(--line);margin-top:60px;padding:26px 0 46px;font-family:var(--mono);font-size:12px;color:var(--dim);position:relative;z-index:1}
+footer .wrap{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+footer a:hover{color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:24px;z-index:100;transform:translate(-50%,20px);opacity:0;background:var(--pink);color:#fff;padding:10px 18px;border-radius:12px;font-family:var(--mono);font-size:13px;font-weight:700;pointer-events:none;transition:.3s;max-width:calc(100vw - 32px);text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.confetti{position:fixed;pointer-events:none;z-index:90;font-family:var(--mono);font-weight:700;animation:fall 1.4s cubic-bezier(.3,.6,.5,1) forwards}
+@keyframes fall{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+
+
+.xl{width:38px;height:38px;border-radius:50%;border:1px solid var(--line2);display:grid;place-items:center;color:var(--ink);transition:.2s;flex:none}
+.xl:hover{border-color:var(--pink);color:var(--pink2)}
+.xl svg{width:15px;height:15px}
+.wbtn{height:38px;padding:0 16px;border-radius:99px;background:var(--pink);color:#fff;font-family:var(--mono);font-weight:700;font-size:12.5px;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(255,79,154,.35);transition:.15s;white-space:nowrap}
+.wbtn:hover{background:var(--pink2)}
+.wbtn.on{background:var(--panel2);border:1px solid var(--line2);box-shadow:none;color:var(--ink)}
+.wbtn.on i{width:8px;height:8px;border-radius:50%;background:var(--gain);box-shadow:0 0 0 3px rgba(94,242,160,.2)}
+.modal{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.open{display:flex}
+.mbg{position:absolute;inset:0;background:rgba(6,4,9,.72);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.mbox{position:relative;z-index:2;width:min(420px,100%);background:var(--panel);border:1px solid var(--line2);border-radius:20px;padding:22px;animation:mIn .35s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes mIn{from{opacity:0;transform:translateY(14px) scale(.97)}}
+.mbox h3{font-family:var(--disp);font-weight:400;font-size:34px;text-transform:uppercase;line-height:1}
+.mbox p{color:var(--mut);font-size:13.5px;margin:8px 0 16px}
+.mbox .x{position:absolute;top:14px;right:16px;color:var(--dim);font-family:var(--mono)}
+.mbox .x:hover{color:var(--ink)}
+.wopt{display:flex;align-items:center;gap:12px;width:100%;padding:13px;border:1px solid var(--line2);border-radius:14px;margin-bottom:8px;text-align:left;transition:.2s}
+.wopt:hover{border-color:var(--pink);background:rgba(255,79,154,.06)}
+.wopt .wi{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-family:var(--mono);flex:none}
+.wopt b{display:block;font-size:14px}.wopt small{color:var(--dim);font-size:12px}
+.wopt .st{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--dim)}
+.wopt .st.ok{color:var(--gain)}
+.wmore{display:flex;gap:8px;margin-top:6px}
+.wmore input{flex:1;min-width:0;height:40px;border-radius:11px;border:1px solid var(--line2);background:var(--bg2);padding:0 12px;font-family:var(--mono);font-size:12.5px;outline:0}
+.wmore input:focus{border-color:var(--pink)}
+.mnote{font-family:var(--mono);font-size:11.5px;color:var(--dim);margin-top:14px}
+@media (max-width:960px){
+  .nav{display:none}
+  .hero{grid-template-columns:minmax(0,1fr);gap:40px}
+  .printer{position:relative;top:0;max-width:420px;margin:0 auto;width:100%}
+  .sh,.refund,.notes{grid-template-columns:minmax(0,1fr)}
+  .steps,.tiers{grid-template-columns:minmax(0,1fr)}
+  .fp{columns:1}
+}
+@media (max-width:560px){
+  .snd,.tk{display:none}
+  .top .wrap{gap:10px}
+  .wbtn{margin-left:auto}
+  .tbl .hm{display:none}
+  .tbl td,.tbl th{padding:10px 8px}
+  .srch{width:100%;margin-left:0}
+  .counters{grid-template-columns:minmax(0,1fr)}
+  .till .cd{font-size:64px}
+  .pform{flex-direction:column}
+  .pform input{height:42px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}[data-r]{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+
+<div class="mq" aria-label="latest"><b>LATEST</b><div class="mq-in" id="mq"></div></div>
+<header class="top"><div class="wrap">
+  <a class="logo" href="#top"><svg viewBox="0 0 32 32" fill="none"><rect x="6" y="3" width="20" height="26" rx="2" fill="#f5f0e4"/><path d="M6 27l3 2 3-2 3 2 3-2 3 2 3-2 2 2V27" fill="#f5f0e4"/><path d="M10 9h12M10 13h8M10 17h12" stroke="#1d1a17" stroke-width="1.6" stroke-linecap="round"/><rect x="10" y="21" width="12" height="3" rx="1" fill="#ff4f9a"/></svg>TAB</a>
+  <nav class="nav" id="nav"><a href="#shame">Hall of Shame</a><a href="#refunds">Refund desk</a><a href="#how">How we calculate</a></nav>
+  <button class="snd" id="sndBtn">[snd on]</button>
+  <a class="tk" href="#refunds">$TAB</a>
+  <a class="xl" href="https://x.com/UseTabTrades" target="_blank" rel="noopener" aria-label="Tab on X" title="@UseTabTrades on X"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.75 3h3.07l-6.7 7.66L22 21h-6.17l-4.83-6.32L5.47 21H2.4l7.17-8.2L2 3h6.33l4.37 5.77L17.75 3Zm-1.08 16.17h1.7L7.4 4.74H5.58l11.09 14.43Z"/></svg></a>
+  <button class="wbtn" id="wBtn">Connect wallet</button>
+</div></header>
+<div class="modal" id="wModal"><div class="mbg" data-wclose></div><div class="mbox" id="wBox"></div></div>
+
+<main class="wrap" id="top">
+<div class="hero">
+  <div>
+    <div class="kick">★ VALUED REGULAR LOUNGE ★</div>
+    <h1><span class="ln"><span style="animation-delay:.05s">Your tab,</span></span><span class="ln"><span style="animation-delay:.18s">finally</span></span><span class="ln"><span class="acc" style="animation-delay:.31s">itemized.</span></span></h1>
+    <p class="lede">Paste any Solana wallet. We'll ring up every trade, every fee (est.) and every airdrop you got. <i>(That last part's quick.)</i></p>
+    <form class="pform" id="pform" autocomplete="off"><input id="addr" placeholder="Paste wallet address…" aria-label="Solana wallet address" spellcheck="false"><button class="pbtn" type="submit">PRINT ▸</button></form>
+    <div class="perr" id="perr"></div>
+    <div class="sample">No wallet handy? <button id="sampleBtn">Try a sample wallet</button></div>
+    <div class="badges"><span>🔒 No wallet connect</span><span>🔑 Never asks for keys</span><span>🍸 Just for laughs</span></div>
+    <p class="fine">Receipts here are simulated: each one is generated from the address you paste, not read from the chain.</p>
+    <div class="counters">
+      <div class="cnt"><small>REGULARS SERVED</small><b id="cServed">0</b></div>
+      <div class="cnt"><small>SOL ON THE TAB</small><b class="loss" id="cSol">0</b></div>
+      <a class="cnt wide" href="#refunds"><div><small>REFUNDS PAID</small><b class="gain" id="cRef">0 SOL</b></div><span class="sub" id="cRefN">next refund in 0:00 ▸</span></a>
+    </div>
+  </div>
+
+  <div class="printer" id="printer">
+    <div class="pr-top"><div class="pr-h"><span class="led" id="led"><i></i><span id="ledT">IDLE</span></span><span class="pr-tag" id="prTag">SAMPLE · REG 01</span></div><div class="slot"></div></div>
+    <div class="feed" id="feed"><div class="paper" id="paper"></div></div>
+    <div class="pr-act" id="prAct"><button class="pill" id="pauseBtn">❚❚ PAUSE PRINTER</button></div>
+  </div>
+</div>
+
+<section class="s" id="shame">
+  <div class="sh"><h2 data-r>Hall of <span class="pink">Shame</span></h2><p data-r>The biggest tabs ever rung up at this bar. Every wallet you print joins the list. Ranks are among wallets printed here, never all traders.</p></div>
+  <div class="card" style="overflow:hidden">
+    <div class="hbar"><div id="hf"><button class="chip on" data-f="all">All time</button><button class="chip" data-f="t5">Plaque-worthy</button><button class="chip" data-f="t4">Tab of the month</button><button class="chip" data-f="you">Yours</button></div><input class="srch" id="hq" placeholder="Find a wallet…" aria-label="search wallets"></div>
+    <table class="tbl"><thead><tr><th>#</th><th>Wallet</th><th class="hm">Coins</th><th class="hm">Worst</th><th class="r">Net</th><th class="r hm">Tier</th></tr></thead><tbody id="hBody"></tbody></table>
+  </div>
+</section>
+
+<section class="s" id="refunds">
+  <div class="sh"><h2 data-r>The house <span class="pink">pays out</span></h2><p data-r>Half of every $TAB creator fee goes back to the biggest tab not yet refunded. One wallet per round, paid in SOL. Here a round is one minute.</p></div>
+  <div class="refund">
+    <div class="card till"><small>NEXT REFUND</small><div class="cd" id="tCd">1:00</div><div class="pot">Pot this round <b class="gain" id="tPot">0.00 SOL</b></div><div class="ring"><i id="tRing"></i></div><small>NEXT IN LINE</small><div class="queue" id="queue"></div></div>
+    <div>
+      <div class="card chk"><h3>Check your place in line</h3><p>Paste any wallet you've printed. No wallet connect.</p><form class="pform" id="cform" style="margin:14px 0 0;max-width:none"><input id="caddr" placeholder="Wallet to check…" aria-label="wallet to check" spellcheck="false"><button class="pbtn" type="submit">CHECK ▸</button></form><div class="res" id="cres"></div></div>
+      <div class="card policy" style="margin-top:20px"><div class="kick" style="margin-bottom:6px">STORE POLICY</div>
+        <div class="prow"><b class="pink">50%</b><div><strong>Refunds, every round</strong><span>One wallet per round: the biggest tab not yet refunded</span><div class="pb"><i data-w="50"></i></div></div></div>
+        <div class="prow"><b class="yel">30%</b><div><strong>Buy back $TAB</strong><span>Bought on market, sent to holders</span><div class="pb"><i data-w="30" style="background:var(--yel)"></i></div></div></div>
+        <div class="prow" style="border:0"><b>20%</b><div><strong>Keeping the lights on</strong><span>Hosting, data, the neon sign</span><div class="pb"><i data-w="20" style="background:var(--mut)"></i></div></div></div>
+      </div>
+    </div>
+  </div>
+  <ul class="fp" data-r>
+    <li>Refunds are for regulars holding at least $20 of $TAB at payout time. Receipts stay free for everyone.</li>
+    <li>We promise percentages, not amounts. No fees, no refunds.</li>
+    <li>Refunded? Back of the line you go.</li>
+    <li>Small rounds roll over to the next one.</li>
+    <li>All payouts here are play money in a simulation.</li>
+    <li>ALL SALES FINAL. EXCEPT, NOW, SOME.</li>
+  </ul>
+</section>
+
+<section class="s" id="how">
+  <div class="sh"><h2 data-r>How we <span class="pink">calculate</span></h2><p data-r>The receipt is arithmetic, not accounting. Here is what each line means, and where it can be wrong.</p></div>
+  <div class="steps">
+    <div class="card step" data-r><div class="n">01 · READ</div><h3>Public address only</h3><p>You paste a public address. No wallet connection, no signature, and we never ask for a key or seed phrase.</p></div>
+    <div class="card step" data-r><div class="n">02 · MATCH</div><h3>Trades, not transfers</h3><p>Only trades count. Transfers and other apps are set aside. Coins aped counts unique coins bought.</p></div>
+    <div class="card step" data-r><div class="n">03 · ESTIMATE</div><h3>Spent − back = net</h3><p>SOL SPENT is SOL into buys, SOL BACK is SOL out of sells. NET is the difference. Fees get their own line, marked est.</p></div>
+  </div>
+  <div class="tiers" id="tiers"></div>
+  <div class="card notes" data-r>
+    <div><h4>Fees are always "est."</h4><p>Fees are shown on their own line and never subtracted twice. Every fee figure carries est.</p></div>
+    <div><h4>Rank is among printed wallets</h4><p>"#48 of 1,204" means among wallets printed here. The denominator is always on the receipt.</p></div>
+    <div><h4>This version is simulated</h4><p>This bar generates each receipt from the address itself, so the same wallet always prints the same tab. It does not read real chain data.</p></div>
+    <div><h4>Remove my wallet</h4><p>Printed a wallet you'd rather forget? Use "reset the bar" at the bottom and the list starts over.</p></div>
+  </div>
+</section>
+
+<div class="cta"><h2 data-r>Ready to see <span class="pink">the damage?</span></h2><button class="pbtn" id="ctaBtn" style="height:50px;padding:0 28px;font-size:15px">PRINT MY TAB ▸</button></div>
+</main>
+<footer><div class="wrap"><span>TAB · the receipt the bar never gave you · simulated receipts, play money, not financial advice</span><span style="display:flex;gap:18px;flex-wrap:wrap"><a href="https://x.com/UseTabTrades" target="_blank" rel="noopener" style="color:var(--pink2)">@UseTabTrades on X ↗</a><a href="#shame">Hall of Shame</a><a href="#refunds">Refund desk</a><button id="resetBtn">reset the bar</button></span></div></footer>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ UTIL ============ */
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(n,d=2)=>n.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const int=n=>Math.round(n).toLocaleString('en-US');
+const sh=a=>a.slice(0,4)+'…'+a.slice(-4);
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),2600)}
+function hash(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19}return ()=>{h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return (h^=h>>>16)>>>0}}
+function rng(seed){let a=hash(seed)();return ()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296}}
+const B58='123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const randAddr=()=>Array.from({length:44},()=>B58[Math.floor(Math.random()*58)]).join('');
+const validAddr=a=>/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a);
+
+/* ============ SOUND ============ */
+let snd=true;try{snd=localStorage.getItem('tab-snd')!=='0'}catch(e){}
+let AC=null;function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){return null}}if(AC.state==='suspended')AC.resume();return AC}
+function noise(d=.03,v=.04,f=3000){if(!snd)return;const a=ac();if(!a)return;const b=a.createBuffer(1,a.sampleRate*d,a.sampleRate),c=b.getChannelData(0);for(let i=0;i<c.length;i++)c[i]=(Math.random()*2-1)*(1-i/c.length);const s=a.createBufferSource(),g=a.createGain(),fl=a.createBiquadFilter();fl.type='bandpass';fl.frequency.value=f;s.buffer=b;g.gain.value=v;s.connect(fl).connect(g).connect(a.destination);s.start()}
+function tone(f,d=.1,v=.04,type='square',w=0){if(!snd)return;const a=ac();if(!a)return;const o=a.createOscillator(),g=a.createGain(),t=a.currentTime+w;o.type=type;o.frequency.value=f;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g).connect(a.destination);o.start(t);o.stop(t+d+.02)}
+const SFX={tick:()=>noise(.025,.05,2600+Math.random()*800),ding:()=>{tone(1318,.25,.04,'sine');tone(1760,.35,.035,'sine',.08)},tear:()=>noise(.25,.08,1200),bad:()=>tone(160,.2,.04,'sawtooth'),cash:()=>{tone(880,.08,.04,'square');tone(1320,.12,.04,'square',.07);tone(1760,.18,.03,'square',.14)}};
+function setSnd(){$('#sndBtn').textContent=snd?'[snd on]':'[snd off]'}
+$('#sndBtn').onclick=()=>{snd=!snd;try{localStorage.setItem('tab-snd',snd?'1':'0')}catch(e){}setSnd();ac();SFX.ding()};setSnd();
+
+/* ============ RECEIPTS ============ */
+const COINS=['MOONPEPE','SOLBRO','GIGACHAD','WIFHAT','RUGLORD','CATGPT','DOGEKING','TURBO9','BONKLE','HAMSTR','NOODLE','PEPE2','FROGGO','LAMBO','SAFEMOON3','ELONCAT','GOBLIN','BASED','SHRIMP','NUTS','COPIUM','HOPIUM','BAGZ','DEGEN','WAGMI','NGMI'];
+const TIERS=[{k:'t0',n:'LEFT THE BAR',r:'Net ≤ 0 SOL',max:0},{k:'t1',n:'ONE DRINK',r:'0 to < 1 SOL',max:1},{k:'t2',n:'REGULAR',r:'1 to < 10 SOL',max:10},{k:'t3',n:'OPEN TAB',r:'10 to < 100 SOL',max:100},{k:'t4',n:'TAB OF THE MONTH',r:'100 to < 1,000 SOL',max:1000},{k:'t5',n:'THE BAR OWES YOU A PLAQUE',r:'1,000+ SOL',max:Infinity}];
+const tierOf=n=>TIERS.find(t=>n<t.max)||TIERS[5];
+function makeReceipt(addr){const r=rng(addr);const R=(a,b)=>a+r()*(b-a);const scale=Math.pow(r(),2.2);
+  const coins=Math.round(3+scale*900),tx=Math.round(coins*R(3,9)),spent=+(Math.pow(R(.2,1),3)*R(5,2600)+R(.3,3)).toFixed(2),ratio=r()<.12?R(1.02,1.6):R(.2,.98);const back=+(spent*ratio).toFixed(2);const fees=+(spent*.01*R(.9,1.25)+tx*.00012).toFixed(2);const net=+(spent-back).toFixed(2);
+  const worst=COINS[Math.floor(r()*COINS.length)];let best=COINS[Math.floor(r()*COINS.length)];if(best===worst)best=COINS[(COINS.indexOf(best)+3)%COINS.length];
+  const y=2023+Math.floor(r()*3),mo=1+Math.floor(r()*12),d=1+Math.floor(r()*28);
+  return {addr,coins,tx,spent,back,fees,net,worst,wv:-+(spent*R(.03,.12)).toFixed(2),best,bv:+(R(.1,1)*spent*.03).toFixed(2),since:`${String(d).padStart(2,'0')}/${String(mo).padStart(2,'0')}/${y}`,store:hash(addr)().toString(16).slice(0,4).toUpperCase(),t:Date.now()}}
+let S=null;
+function fresh(){const list=[];for(let i=0;i<60;i++){const a=randAddr();const rc=makeReceipt(a);list.push(rc)}return {list,mine:[],served:1204,refunds:[],pot:0,roundEnd:Date.now()+60000,paid:0}}
+try{S=JSON.parse(localStorage.getItem('thetab'))}catch(e){}
+if(!S||!S.list)S=fresh();
+function save(){try{localStorage.setItem('thetab',JSON.stringify(S))}catch(e){}}
+const ranked=()=>S.list.slice().sort((a,b)=>b.net-a.net);
+const rankOf=addr=>ranked().findIndex(x=>x.addr===addr)+1;
+function receiptHTML(rc,sample){const t=tierOf(rc.net),rk=rankOf(rc.addr),N=S.list.length,top=rk?Math.max(1,Math.round(rk/N*100)):0;const d=new Date(rc.t);
+  const bars=[...Array(54)].map((_,i)=>{const w=(hash(rc.addr+i)()%3)+1;return `<i style="width:${w}px;opacity:${(hash(rc.addr+'o'+i)()%10)>1?1:0}"></i>`}).join('');
+  return `<div class="rc-band ${sample?'':'sim'}">${sample?'SAMPLE DATA':'SIMULATED · FOR LAUGHS'}</div>
+  <svg class="rc-logo" viewBox="0 0 32 32" fill="none"><rect x="6" y="3" width="20" height="26" rx="2" fill="#1d1a17"/><path d="M10 9h12M10 13h8M10 17h12" stroke="#f5f0e4" stroke-width="1.6" stroke-linecap="round"/><rect x="10" y="21" width="12" height="3" rx="1" fill="#ff4f9a"/></svg>
+  <div class="rc-t">TAB</div><div class="rc-s">THE BAR · TABLE #${rc.store} · REG 01</div><div class="rc-hr"></div>
+  ${[['customer',sh(rc.addr)],['regular since',rc.since],['printed',`${d.toLocaleDateString('en-GB')} ${d.toISOString().slice(11,16)} UTC`]].map(r=>`<div class="rc-r"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="rc-hr"></div>
+  ${[['coins aped',int(rc.coins)],['transactions',int(rc.tx)],[`worst: $${rc.worst}`,fmt(rc.wv)],[`best: $${rc.best}`,'+'+fmt(rc.bv)],['sol spent',fmt(rc.spent)],['sol back',fmt(rc.back)],['fees paid (est.)',fmt(rc.fees),1]].map(r=>`<div class="rc-r${r[2]?' m':''}"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}<div class="rc-hr"></div>
+  <div class="rc-big"><span>${rc.net>0?'NET LOSS':'NET GAIN'}</span><span>${rc.net>0?'−':'+'}${fmt(Math.abs(rc.net))} SOL</span></div>
+  <div class="rc-r m"><span>rank</span><span>${rk?`#${int(rk)} / ${int(N)} · TOP ${top}%`:'NOT YET AVAILABLE'}</span></div><div class="rc-r m"><span>tier</span><span>${t.n}</span></div>
+  <div class="rc-air"><span>AIRDROP RECEIVED</span><span>$0.00</span></div>
+  <div class="bars">${bars}</div><div class="rc-c">${sh(rc.addr)} · thetab.bar/r/${sh(rc.addr)}</div>
+  <div class="rc-thx">THANK YOU FOR DRINKING<br>PLEASE COME AGAIN (YOU WILL)</div>`}
+
+/* ============ PRINTER ============ */
+let printing=false,paused=false,cur=null,sampleT=null;
+const feed=$('#feed'),paper=$('#paper');
+function setLed(on,t){$('#led').classList.toggle('on',on);$('#ledT').textContent=t}
+let ptok=0;
+async function printReceipt(rc,sample){if(printing&&sample)return;const my=++ptok;printing=true;paused=false;clearTimeout(sampleT);cur={rc,sample};
+  if(feed.offsetHeight>0){paper.classList.add('tear');SFX.tear();await wait(500);paper.classList.remove('tear')}if(my!==ptok)return;
+  paper.innerHTML=receiptHTML(rc,sample);feed.style.height='0px';setLed(true,'PRINTING…');$('#prTag').textContent=sample?'SAMPLE · REG 01':'TABLE #'+rc.store;
+  $('#prAct').innerHTML='<button class="pill" id="pauseBtn">❚❚ PAUSE PRINTER</button>';bindPause();
+  const H=paper.offsetHeight+12;let h=0;
+  while(h<H){if(my!==ptok)return;if(paused){await wait(120);continue}h=Math.min(H,h+ (sample?14:18));feed.style.height=h+'px';SFX.tick();await wait(sample?55:42)}
+  if(my!==ptok)return;setLed(false,'DONE');printing=false;
+  if(sample){$('#prAct').innerHTML='<button class="pill" id="pauseBtn">❚❚ PAUSE PRINTER</button>';bindPause();sampleT=setTimeout(()=>{if(!printing&&cur&&cur.sample)printReceipt(sampleRc(),true)},7000)}
+  else{SFX.ding();confetti();$('#prAct').innerHTML=`<button class="pill pk" id="dlBtn">⤓ SAVE PNG</button><button class="pill" id="cpBtn">⧉ COPY TAB</button><button class="pill" id="againBtn">↻ PRINT ANOTHER</button>`;
+    $('#dlBtn').onclick=()=>downloadPNG(rc);$('#cpBtn').onclick=()=>copyTab(rc);$('#againBtn').onclick=()=>{$('#addr').value='';$('#addr').focus();scrollTo({top:0,behavior:'smooth'})}}}
+function bindPause(){const b=$('#pauseBtn');if(b)b.onclick=()=>{paused=!paused;b.textContent=paused?'▶ RESUME PRINTER':'❚❚ PAUSE PRINTER';setLed(!paused&&printing,paused?'PAUSED':printing?'PRINTING…':'IDLE');if(!paused&&!printing&&cur&&cur.sample)sampleT=setTimeout(()=>printReceipt(sampleRc(),true),400);if(paused)clearTimeout(sampleT)}}
+const wait=ms=>new Promise(r=>setTimeout(r,ms));
+let sIdx=0;function sampleRc(){const L=ranked().slice(0,20);sIdx=(sIdx+1)%L.length;return L[sIdx]}
+function confetti(){const r=$('#printer').getBoundingClientRect();for(let i=0;i<26;i++){const d=document.createElement('div');d.className='confetti';d.textContent=['$','◎','✦','🍸','−','%'][i%6];d.style.left=(r.left+r.width/2)+'px';d.style.top=(r.top+60)+'px';d.style.color=['#ff4f9a','#ffe14d','#5ef2a0','#fbf7ff'][i%4];d.style.setProperty('--dx',(Math.random()*360-180)+'px');d.style.setProperty('--dy',(Math.random()*300+40)+'px');d.style.setProperty('--rot',(Math.random()*540-270)+'deg');document.body.appendChild(d);setTimeout(()=>d.remove(),1400)}}
+
+/* print flow */
+function doPrint(addr){addr=addr.trim();$('#perr').textContent='';if(!addr)return $('#perr').textContent='Paste a wallet address first.';if(!validAddr(addr)){SFX.bad();return $('#perr').textContent="That doesn't look like a Solana address."}
+  ac();let rc=S.list.find(x=>x.addr===addr);const isNew=!rc;if(!rc){rc=makeReceipt(addr);S.list.push(rc);S.served++}rc.t=Date.now();if(!S.mine.includes(addr))S.mine.push(addr);save();renderAll();
+  if(innerWidth<960)$('#printer').scrollIntoView({behavior:'smooth',block:'start'});printReceipt(rc,false);if(isNew)toast(`Ringing up ${sh(addr)}…`)}
+$('#pform').onsubmit=e=>{e.preventDefault();doPrint($('#addr').value)};
+$('#sampleBtn').onclick=()=>{const a=randAddr();$('#addr').value=a;doPrint(a)};
+$('#ctaBtn').onclick=()=>{scrollTo({top:0,behavior:'smooth'});setTimeout(()=>$('#addr').focus(),500)};
+$('#addr').addEventListener('input',()=>{$('#perr').textContent=''});
+
+/* PNG export */
+function downloadPNG(rc){const W=420,lines=[];const t=tierOf(rc.net),rk=rankOf(rc.addr),N=S.list.length;
+  const c=document.createElement('canvas'),s=2;c.width=W*s;c.height=760*s;const x=c.getContext('2d');x.scale(s,s);x.fillStyle='#f5f0e4';x.fillRect(0,0,W,760);x.fillStyle='#1d1a17';let y=34;
+  const M=v=>x.font=`${v}px "Space Mono",monospace`;const row=(a,b,op)=>{x.globalAlpha=op?.6:1;M(13);x.textAlign='left';x.fillText(a.toUpperCase(),26,y);x.textAlign='right';x.fillText(b,W-26,y);x.globalAlpha=1;y+=21};const hr=()=>{x.setLineDash([4,3]);x.strokeStyle='rgba(29,26,23,.4)';x.beginPath();x.moveTo(26,y-8);x.lineTo(W-26,y-8);x.stroke();x.setLineDash([]);y+=10};
+  x.fillStyle='#ff4f9a';x.fillRect(26,y-18,W-52,22);x.fillStyle='#fff';M(11);x.textAlign='center';x.fillText('SIMULATED · FOR LAUGHS',W/2,y-3);y+=30;x.fillStyle='#1d1a17';x.font='bold 22px "Space Mono",monospace';x.fillText('TAB',W/2,y);y+=20;M(11);x.globalAlpha=.65;x.fillText(`THE BAR · TABLE #${rc.store} · REG 01`,W/2,y);x.globalAlpha=1;y+=26;hr();
+  row('customer',sh(rc.addr));row('regular since',rc.since);row('printed',new Date(rc.t).toISOString().slice(0,16).replace('T',' ')+' UTC');hr();
+  row('coins aped',int(rc.coins));row('transactions',int(rc.tx));row('worst: $'+rc.worst,fmt(rc.wv));row('best: $'+rc.best,'+'+fmt(rc.bv));row('sol spent',fmt(rc.spent));row('sol back',fmt(rc.back));row('fees paid (est.)',fmt(rc.fees),1);hr();
+  x.font='bold 18px "Space Mono",monospace';x.textAlign='left';x.fillText(rc.net>0?'NET LOSS':'NET GAIN',26,y+4);x.textAlign='right';x.fillText((rc.net>0?'-':'+')+fmt(Math.abs(rc.net))+' SOL',W-26,y+4);y+=32;
+  row('rank',rk?`#${int(rk)} / ${int(N)}`:'N/A',1);row('tier',t.n,1);y+=6;x.fillStyle='#1d1a17';x.fillRect(26,y-16,W-52,26);x.fillStyle='#f5f0e4';x.font='bold 13px "Space Mono",monospace';x.textAlign='left';x.fillText('AIRDROP RECEIVED',36,y+2);x.textAlign='right';x.fillText('$0.00',W-36,y+2);y+=34;x.fillStyle='#1d1a17';
+  let bx=40;for(let i=0;i<90&&bx<W-40;i++){const w=(hash(rc.addr+i)()%3)+1;if((hash(rc.addr+'o'+i)()%10)>1)x.fillRect(bx,y,w,52);bx+=w+1}y+=72;M(11);x.textAlign='center';x.globalAlpha=.75;x.fillText(sh(rc.addr)+' · thetab.bar',W/2,y);x.globalAlpha=1;y+=28;x.font='bold 13px "Space Mono",monospace';x.fillText('THANK YOU FOR DRINKING',W/2,y);y+=18;x.fillText('PLEASE COME AGAIN (YOU WILL)',W/2,y);
+  c.toBlob(async blob=>{if(!blob)return toast('Could not draw the receipt');const dl=await getDl();if(!dl){const u=URL.createObjectURL(blob),l=document.createElement('a');l.href=u;l.download=`the-tab-${rc.addr.slice(0,6)}.png`;document.body.appendChild(l);l.click();l.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);SFX.cash();return toast('Receipt saved as PNG')}try{await dl.save({filename:`the-tab-${rc.addr.slice(0,6)}.png`,data:blob});SFX.cash();toast('Receipt saved as PNG')}catch(e){if(e&&e.code==='declined')toast('Save cancelled');else if(e&&e.code==='rate_limited')toast('One save at a time, try again in a moment');else toast('Saving isn\'t available here')}},'image/png')}
+let _dl;function getDl(){if(!_dl)_dl=(window.claude&&window.claude.use)?window.claude.use('downloads').catch(()=>null):Promise.resolve(null);return _dl}
+function copyTab(rc){const t=tierOf(rc.net),txt=`🧾 My tab at Tab\n${rc.net>0?'Net loss':'Net gain'}: ${rc.net>0?'-':'+'}${fmt(Math.abs(rc.net))} SOL\nCoins aped: ${int(rc.coins)} · Worst: $${rc.worst}\nTier: ${t.n}\nAirdrop received: $0.00\n(simulated, for laughs)`;try{navigator.clipboard.writeText(txt).then(()=>toast('Tab copied, go post it'),()=>toast('Copy blocked by the browser'))}catch(e){toast('Copy blocked by the browser')}SFX.tick()}
+
+/* ============ HALL OF SHAME ============ */
+let hF='all',hQ='';
+function renderHall(){let L=ranked().map((r,i)=>({r,i:i+1}));if(hF==='t5')L=L.filter(x=>x.r.net>=1000);if(hF==='t4')L=L.filter(x=>x.r.net>=100&&x.r.net<1000);if(hF==='you')L=L.filter(x=>S.mine.includes(x.r.addr));if(hQ)L=L.filter(x=>x.r.addr.toLowerCase().includes(hQ));
+  const show=hF==='all'&&!hQ?L.slice(0,15):L.slice(0,40);const meExtra=hF==='all'&&!hQ?L.filter(x=>S.mine.includes(x.r.addr)&&x.i>15):[];
+  const row=({r,i})=>{const t=tierOf(r.net);return `<tr class="click${S.mine.includes(r.addr)?' me':''}" data-a="${r.addr}"><td><span class="rank ${i<=3?'g'+i:''}">${i}</span></td><td>${sh(r.addr)}${S.mine.includes(r.addr)?' · you':''}</td><td class="hm">${int(r.coins)}</td><td class="hm">$${r.worst}</td><td class="r ${r.net>0?'loss':'gain'}">${r.net>0?'−':'+'}${fmt(Math.abs(r.net))}</td><td class="r hm"><span class="tier ${t.k}">${t.n}</span></td></tr>`};
+  $('#hBody').innerHTML=show.map(row).join('')+(meExtra.length?`<tr><td colspan="6" style="color:var(--dim)">…</td></tr>`+meExtra.map(row).join(''):'')||`<tr><td colspan="6" style="color:var(--dim);padding:30px 16px">${hF==='you'?'Print a wallet and it shows up here.':'No wallets match.'}</td></tr>`}
+$('#hf').onclick=e=>{const b=e.target.closest('button');if(!b)return;hF=b.dataset.f;$$('#hf button').forEach(x=>x.classList.toggle('on',x===b));SFX.tick();renderHall()};
+$('#hq').oninput=e=>{hQ=e.target.value.trim().toLowerCase();renderHall()};
+$('#hBody').onclick=e=>{const tr=e.target.closest('tr[data-a]');if(!tr)return;const rc=S.list.find(x=>x.addr===tr.dataset.a);if(rc){ac();scrollTo({top:0,behavior:'smooth'});printReceipt(rc,!S.mine.includes(rc.addr))}};
+
+/* ============ REFUND DESK ============ */
+function queue(){const done=new Set(S.refunds.map(r=>r.addr));return ranked().filter(r=>r.net>0&&!done.has(r.addr))}
+function renderRefunds(){const left=Math.max(0,S.roundEnd-Date.now()),s=Math.ceil(left/1000);$('#tCd').textContent=`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;$('#tRing').style.width=(100-left/600)+'%';$('#tPot').textContent=fmt(S.pot,3)+' SOL';
+  $('#cRefN').textContent=`next refund in ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')} ▸`;
+  const q=queue().slice(0,4),rec=S.refunds.slice(-2).reverse();$('#queue').innerHTML=rec.map(r=>`<div class="paid"><span>✓</span><span>${sh(r.addr)}</span><span>+${fmt(r.amt,3)}</span></div>`).join('')+q.map((r,i)=>`<div class="${i===0?'next':''}"><span>${i===0?'▸':i+1}</span><span>${sh(r.addr)}${S.mine.includes(r.addr)?' · you':''}</span><span class="loss">−${fmt(r.net)}</span></div>`).join('')}
+function payRound(){const q=queue();S.roundEnd=Date.now()+60000;if(S.pot<.05||!q.length){toast('Small round, the pot rolls over');return}const w=q[0],amt=S.pot;S.refunds.push({addr:w.addr,amt,t:Date.now()});S.paid+=amt;S.pot=0;SFX.cash();
+  toast(`${sh(w.addr)} got a REFUND +${fmt(amt,3)} SOL${S.mine.includes(w.addr)?' · that\'s you!':''}`);mqPush(`${sh(w.addr)} got a REFUND <span class="gain">+${fmt(amt,2)} SOL</span>`);save();renderAll()}
+$('#cform').onsubmit=e=>{e.preventDefault();const a=$('#caddr').value.trim();const out=$('#cres');if(!validAddr(a)){SFX.bad();out.innerHTML='<span class="loss">That doesn\'t look like a Solana address.</span>';return}
+  const rc=S.list.find(x=>x.addr===a);if(!rc){out.innerHTML=`Not printed yet. <button class="pink" id="cPrint" style="border-bottom:1px solid">Print it now ▸</button>`;$('#cPrint').onclick=()=>{$('#addr').value=a;doPrint(a)};return}
+  const paid=S.refunds.find(r=>r.addr===a);if(paid){out.innerHTML=`<span class="gain">Refunded +${fmt(paid.amt,3)} SOL.</span> Back of the line you go.`;return}
+  if(rc.net<=0){out.innerHTML='<span class="gain">You left the bar up.</span> Nothing to refund. Respect.';return}
+  const pos=queue().findIndex(x=>x.addr===a)+1;out.innerHTML=`You're <b class="yel">#${pos}</b> in line with a tab of <span class="loss">−${fmt(rc.net)} SOL</span>.<br><span style="color:var(--dim)">About ${pos} round${pos>1?'s':''} (${pos} min here) away if nobody bigger walks in.</span>`;SFX.tick()};
+
+/* ============ MARQUEE + COUNTERS ============ */
+const mqL=[];function mqPush(h){mqL.unshift(h);if(mqL.length>14)mqL.pop();renderMq()}
+function renderMq(){const h=mqL.map(x=>`<span>${x}</span>`).join('');$('#mq').innerHTML=h+h}
+function seedMq(){ranked().slice(0,10).forEach((r,i)=>mqL.push(i%3===0?`${sh(r.addr)} got a REFUND <span class="gain">+${fmt(Math.random()*.9+.1,2)} SOL</span>`:`${sh(r.addr)} printed <span class="loss">−${fmt(r.net,2)} SOL</span>`));renderMq()}
+function countTo(el,v,f){const from=el._v??0;el._v=v;const t0=performance.now();(function s(n){const k=Math.min(1,(n-t0)/900),e=1-Math.pow(1-k,3);el.textContent=f(from+(v-from)*e);if(k<1)requestAnimationFrame(s)})(t0)}
+function renderCounters(){countTo($('#cServed'),S.served,int);countTo($('#cSol'),-S.list.reduce((s,r)=>s+Math.max(0,r.net),0),n=>'−'+int(Math.abs(n)));countTo($('#cRef'),S.paid,n=>fmt(n,2)+' SOL');}
+function renderTiers(){$('#tiers').innerHTML=TIERS.map((t,i)=>`<div class="tc ${t.k}" data-r><small>T${i}</small><b>${t.n}</b><span>${t.r}</span></div>`).join('');$$('#tiers [data-r]').forEach(el=>io.observe(el))}
+function renderAll(){renderHall();renderRefunds();renderCounters()}
+
+/* bots: other regulars walk in */
+setInterval(()=>{S.pot+=Math.random()*.012+.002;if(Date.now()>=S.roundEnd)payRound();renderRefunds()},1000);
+setInterval(()=>{if(Math.random()<.6){const a=randAddr(),rc=makeReceipt(a);S.list.push(rc);S.served++;if(S.list.length>400)S.list.splice(0,1);mqPush(`${sh(a)} printed <span class="${rc.net>0?'loss':'gain'}">${rc.net>0?'−':'+'}${fmt(Math.abs(rc.net),2)} SOL</span>`);renderCounters();renderHall();save()}},6000);
+
+/* reveal + nav */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');e.target.querySelectorAll?.('.pb i').forEach(i=>i.style.width=i.dataset.w+'%');io.unobserve(e.target)}}),{threshold:.15});
+$$('[data-r]').forEach(el=>io.observe(el));$$('.policy').forEach(el=>io.observe(el));
+const secs=['shame','refunds','how'];addEventListener('scroll',()=>{let c='';for(const id of secs){if(document.getElementById(id).getBoundingClientRect().top<innerHeight*.35)c=id}$$('#nav a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+c))},{passive:true});
+$('#resetBtn').onclick=()=>{const b=$('#resetBtn');if(b._a&&Date.now()-b._a<3000){S=fresh();save();renderAll();toast('The bar is reset')}else{b._a=Date.now();toast('Tap again to wipe every tab')}};
+
+/* ============ WALLET (read-only) ============ */
+function provider(k){try{if(k==='phantom')return (window.phantom&&window.phantom.solana)||(window.solana&&window.solana.isPhantom?window.solana:null);if(k==='solflare')return window.solflare&&window.solflare.isSolflare?window.solflare:null;if(k==='backpack')return window.backpack||null}catch(e){}return null}
+function renderWBtn(){const b=$('#wBtn');if(S.wallet){b.className='wbtn on';b.innerHTML=`<i></i>${sh(S.wallet)}`}else{b.className='wbtn';b.textContent='Connect wallet'}}
+function openWallet(){const box=$('#wBox');
+  if(S.wallet){box.innerHTML=`<button class="x" data-wclose>✕</button><h3>Your wallet</h3><p class="mono" style="word-break:break-all;color:var(--ink)">${esc(S.wallet)}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="pbtn" id="wPrint">PRINT MY TAB ▸</button><button class="pill" id="wOut">Disconnect</button></div><p class="mnote">Read-only. We only see your public address. Nothing is ever signed.</p>`;
+    $('#wPrint').onclick=()=>{closeW();$('#addr').value=S.wallet;doPrint(S.wallet)};$('#wOut').onclick=()=>{S.wallet=null;save();renderWBtn();closeW();toast('Wallet disconnected')}}
+  else{const W=[['phantom','Phantom','#ab9ff2','P'],['solflare','Solflare','#fc7c3a','S'],['backpack','Backpack','#e33e3f','B']];
+    box.innerHTML=`<button class="x" data-wclose>✕</button><h3>Connect wallet</h3><p>Read-only: we only read your public address to print your tab. No signatures, no keys, ever.</p>`+W.map(([k,n,c,l])=>`<button class="wopt" data-w="${k}"><span class="wi" style="background:${c};color:#120e18">${l}</span><span><b>${n}</b><small>public address only</small></span><span class="st ${provider(k)?'ok':''}">${provider(k)?'DETECTED':'NOT FOUND'}</span></button>`).join('')+`<div class="wmore"><input id="wPaste" placeholder="…or paste your address" spellcheck="false"><button class="pill" id="wPasteGo">Use</button></div><button class="wopt" id="wDemo" style="margin-top:8px"><span class="wi" style="background:var(--yel);color:#1a1606">★</span><span><b>Demo wallet</b><small>try it with a random address</small></span></button><p class="mnote">Wallet extensions often can't reach pages shown inside the Claude app. If yours says not found, paste your address instead.</p>`;
+    $$('#wBox [data-w]').forEach(b=>b.onclick=()=>connectW(b.dataset.w));$('#wPasteGo').onclick=()=>{const a=$('#wPaste').value.trim();if(!validAddr(a)){SFX.bad();return toast("That doesn't look like a Solana address")}setWallet(a)};$('#wDemo').onclick=()=>setWallet(randAddr())}
+  $('#wModal').classList.add('open')}
+async function connectW(k){const p=provider(k);if(!p){SFX.bad();return toast(`${k[0].toUpperCase()+k.slice(1)} isn't available on this page. Paste your address instead.`)}
+  try{const r=await p.connect({onlyIfTrusted:false});const pk=(r&&r.publicKey)||p.publicKey;const a=pk&&pk.toString?pk.toString():String(pk||'');if(!validAddr(a))throw new Error('no key');setWallet(a)}catch(e){SFX.bad();toast('Connection cancelled')}}
+function setWallet(a){S.wallet=a;save();renderWBtn();closeW();SFX.ding();toast(`Connected ${sh(a)} · printing your tab`);$('#addr').value=a;scrollTo({top:0,behavior:'smooth'});setTimeout(()=>doPrint(a),400)}
+function closeW(){$('#wModal').classList.remove('open')}
+$('#wBtn').onclick=()=>{ac();SFX.tick();openWallet()};
+document.addEventListener('click',e=>{if(e.target.closest('[data-wclose]'))closeW()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeW()});
+renderWBtn();
+renderTiers();seedMq();renderAll();setTimeout(()=>printReceipt(ranked()[2],true),900);
+</script>
+
+</body>
+</html>
